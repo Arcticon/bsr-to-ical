@@ -68,6 +68,5 @@ export async function getAppointmentsFromBSR(address: string) {
     }
   )
   const json = (await response.json()) as BSR
-  console.log(json.dates)
   return json.dates
 }
