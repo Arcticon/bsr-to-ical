@@ -9,6 +9,9 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node_version: [20, 22, 24]
 
     steps:
       - name: Checkout code
@@ -20,8 +23,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 20
-          cache: "pnpm"
+          node-version: ${{ matrix.node_version }}
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -29,5 +32,11 @@ jobs:
       - name: Run Lint
         run: pnpm lint
 
+      - name: Run Format
+        run: pnpm format:check
+
       - name: Check Types (Build)
         run: pnpm build
+
+      - name: Test
+        run: pnpm test

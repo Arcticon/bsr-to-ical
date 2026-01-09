@@ -1,7 +1,7 @@
 {
-  "*.{js,jsx,ts,tsx}": [
-    "eslint --report-unused-disable-directives --fix",
-    "prettier --write"
+  "apps/**/*.{js,jsx,ts,tsx}": [
+    "pnpm --filter apps lint --fix --",
+    "pnpm exec prettier --write --"
   ],
-  "*.md": ["prettier --write"]
+  "apps/**/*.md": ["pnpm exec prettier --write --"]
 }
