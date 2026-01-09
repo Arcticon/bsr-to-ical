@@ -1,4 +1,4 @@
-type PLZResponse = {
+type BSRResponse = {
   value: string
   label: string
 }
@@ -37,9 +37,13 @@ type Appointment = {
   disposalComp: string
 }
 
-export async function getPLZFromAddress(street: string, streetNumber: string) {
-  console.debug('fetching id for location from bsr')
-  const response = await fetch(
+export async function getBsrLocationFromAddress(
+  street: string,
+  streetNumber: string,
+  plz: string
+): Promise<BSRResponse> {
+  console.debug('fetching id for location from bsr', street, streetNumber, plz)
+  const bsrResponse = await fetch(
     `${process.env.BSR_BASE}/plzSet/plzSet?searchQuery=${encodeURIComponent(street)}:::${streetNumber}`,
     {
       headers: {
@@ -49,12 +53,16 @@ export async function getPLZFromAddress(street: string, streetNumber: string) {
       method: 'GET',
     }
   )
-  const [plz] = (await response.json()) as PLZResponse[]
-  console.debug('got', plz, 'from bsr')
-  return plz as PLZResponse
+  const bsrJson = (await bsrResponse.json()) as BSRResponse[]
+  const bsrLocation = bsrJson.at(0)
+  if (!bsrLocation) {
+    throw new Error('Address not found')
+  }
+  console.debug('got', bsrLocation, 'from bsr')
+  return bsrLocation
 }
 
-export async function getAppointmentsFromBSR(address: string) {
+export async function getAppointmentsFromBsrLocation(address: string) {
   const currentYear = new Date().getFullYear()
   const query = `AddrKey eq '${address}' and DateFrom eq datetime'${currentYear}-01-01T00:00:00' and DateTo eq datetime'${currentYear}-12-31T00:00:00' and (Category eq 'HM' or Category eq 'BI' or Category eq 'WS' or Category eq 'LT' or Category eq 'WB')`
   const response = await fetch(

@@ -30,5 +30,5 @@ RUN pnpm install --frozen-lockfile --prod
 
 COPY --from=builder /app/dist ./dist
 
-EXPOSE 3000
+EXPOSE 3001
 CMD ["node", "--env-file=.env", "dist/index.js"]

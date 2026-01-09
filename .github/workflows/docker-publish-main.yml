@@ -2,24 +2,30 @@ name: Publish Docker Image
 
 on:
   push:
-    branches: ["main"]
-    tags: ["v*.*.*"] # Triggers when you push a version tag like v1.0.0
+    branches: ['main']
+    tags: ['v*.*.*'] # Triggers when you push a version tag like v1.0.0
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - context: apps/backend
+            image_name: bsr-to-ical-backend
+          - context: apps/frontend
+            image_name: bsr-to-ical-frontend
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      # 1. Extract metadata (Tags, Labels) for Docker
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/bsr-to-ical
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image_name }}
           tags: |
-            # Set 'latest' only for the main branch
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=semver,pattern={{version}}
 
@@ -32,11 +38,11 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 2. Build and push using the extracted metadata
       - name: Build and push
         uses: docker/build-push-action@v7
         with:
           context: .
+          file: ${{ matrix.context }}/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
