@@ -15,7 +15,7 @@ jobs:
       # 1. Extract metadata (Tags, Labels) for Docker
       - name: Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/bsr-to-ical
           tags: |
