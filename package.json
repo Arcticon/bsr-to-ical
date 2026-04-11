@@ -30,6 +30,6 @@
   "dependencies": {
     "fastify": "^5.6.2",
     "husky": "^9.1.7",
-    "ical-generator": "^10.0.0"
+    "ical-generator": "^10.1.0"
   }
 }
