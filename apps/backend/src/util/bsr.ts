@@ -37,12 +37,17 @@ type Appointment = {
   disposalComp: string
 }
 
+/**
+ * https://www.bsr.de/abfuhrkalender
+ * @param street
+ * @param streetNumber
+ * @returns
+ */
 export async function getBsrLocationFromAddress(
   street: string,
-  streetNumber: string,
-  plz: string
-): Promise<BSRResponse> {
-  console.debug('fetching id for location from bsr', street, streetNumber, plz)
+  streetNumber: string
+): Promise<BSRResponse[]> {
+  console.debug('fetching id for location from bsr', street, streetNumber)
   const bsrResponse = await fetch(
     `${process.env.BSR_BASE}/plzSet/plzSet?searchQuery=${encodeURIComponent(street)}:::${streetNumber}`,
     {
@@ -54,12 +59,27 @@ export async function getBsrLocationFromAddress(
     }
   )
   const bsrJson = (await bsrResponse.json()) as BSRResponse[]
-  const bsrLocation = bsrJson.at(0)
-  if (!bsrLocation) {
-    throw new Error('Address not found')
+  console.debug('got', bsrJson, 'from bsr')
+  return bsrJson
+}
+
+export function filterByCategories(
+  dates: BSR['dates'],
+  categories: (keyof typeof Category)[]
+): BSR['dates'] {
+  if (categories.length === 0) {
+    return dates
   }
-  console.debug('got', bsrLocation, 'from bsr')
-  return bsrLocation
+  const result: BSR['dates'] = {}
+  for (const [date, appointments] of Object.entries(dates)) {
+    const filtered = appointments.filter((appointment) =>
+      categories.includes(appointment.category)
+    )
+    if (filtered.length > 0) {
+      result[date] = filtered
+    }
+  }
+  return result
 }
 
 export async function getAppointmentsFromBsrLocation(address: string) {

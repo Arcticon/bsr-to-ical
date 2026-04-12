@@ -1,5 +1,7 @@
 import fastify, { type FastifySchema } from 'fastify'
 import {
+  Category,
+  filterByCategories,
   getAppointmentsFromBsrLocation,
   getBsrLocationFromAddress,
 } from './util/bsr.js'
@@ -10,7 +12,8 @@ const app = fastify({ logger: true })
 type Query = {
   street: string
   number: string
-  plz: string
+  zipcode: string
+  categories: string
 }
 
 const IcalQuerySchema: FastifySchema = {
@@ -19,9 +22,10 @@ const IcalQuerySchema: FastifySchema = {
     properties: {
       street: { type: 'string' },
       number: { type: 'string' },
-      plz: { type: 'string' },
+      zipcode: { type: 'string', pattern: '^1' },
+      categories: { type: 'string' },
     },
-    required: ['street', 'number', 'plz'],
+    required: ['street', 'number', 'zipcode', 'categories'],
   },
 } as const
 
@@ -29,7 +33,7 @@ app.get<{ Querystring: Query }>(
   '/ical',
   { schema: IcalQuerySchema },
   async (request, reply) => {
-    const { street, number, plz } = request.query
+    const { street, number, zipcode, categories } = request.query
 
     if (!street || !number) {
       reply.status(400).send({
@@ -39,11 +43,33 @@ app.get<{ Querystring: Query }>(
       return
     }
 
-    try {
-      const { value } = await getBsrLocationFromAddress(street, number, plz)
-      const appointments = await getAppointmentsFromBsrLocation(value)
+    const validCategoryKeys = Object.keys(Category) as (keyof typeof Category)[]
+    const selectedCategories = categories
+      .split(',')
+      .filter((category): category is keyof typeof Category =>
+        (validCategoryKeys as string[]).includes(category)
+      )
 
-      const calendar = generateCalendar(appointments)
+    try {
+      const locations = await getBsrLocationFromAddress(street, number)
+      if (!locations.length) {
+        throw new Error('Address not found for the given postal code')
+      }
+      const location =
+        locations.length === 1
+          ? locations.at(0)
+          : locations.find((location) => location.label.includes(zipcode))
+      if (!location) {
+        throw new Error('Address not found for the given postal code')
+      }
+      const { value } = location
+      const allAppointments = await getAppointmentsFromBsrLocation(value)
+      const filteredAppointments = filterByCategories(
+        allAppointments,
+        selectedCategories
+      )
+
+      const calendar = generateCalendar(filteredAppointments)
 
       reply.type('text/calendar; charset=utf-8')
       reply.header('Content-Disposition', 'inline')
